@@ -1,0 +1,79 @@
+{
+	# Machine-specific options (local/*.global, not in the repository).
+	import /etc/caddy/local/*.global
+	order rate_limit before file_server
+	servers {
+		# Public traffic arrives through caddy_musicserver on the docker network: take the
+		# visitor's address from X-Forwarded-For only when the request comes from there.
+		trusted_proxies static 172.16.0.0/12
+		client_ip_headers X-Forwarded-For
+		timeouts {
+			read_header 10s
+			idle 2m
+		}
+	}
+}
+
+(site) {
+	root * /srv
+
+	# Only static files are served; nothing can be POSTed.
+	@write not method GET HEAD
+	respond @write 405
+
+	# Per-visitor limits. A page load is ~20 requests and 1-3 large files (WASM runtimes,
+	# model), cached by the browser afterwards; this leaves plenty of room for real use,
+	# including several people behind one address, but stops floods and bulk downloading.
+	rate_limit {
+		zone heavy {
+			match {
+				path *.wasm *.onnx
+			}
+			key {client_ip}
+			events 60
+			window 10m
+		}
+		zone all {
+			key {client_ip}
+			events 600
+			window 1m
+		}
+	}
+
+	header {
+		# The page can't send anything anywhere except fetching its own files, and can't be framed.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		# Cross-origin isolation (needed for WASM threads and SharedArrayBuffer).
+		Cross-Origin-Opener-Policy same-origin
+		Cross-Origin-Embedder-Policy require-corp
+		Cross-Origin-Resource-Policy same-origin
+		Strict-Transport-Security "max-age=31536000"
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+		-Server
+	}
+
+	# Large runtimes and the model barely change: let browsers keep them for a week.
+	# The app itself is always revalidated (cheap 304s thanks to ETags).
+	@static path /vendor/* /models/*
+	header @static Cache-Control "public, max-age=604800"
+	@app not path /vendor/* /models/*
+	header @app Cache-Control "no-cache"
+
+	# Files are compressed once at build time (build.sh), not on every request.
+	file_server {
+		precompressed zstd gzip
+		hide .*
+	}
+}
+
+# Public site: caddy_musicserver terminates TLS for flouteur.braquage.fun and proxies
+# here over the webnet docker network.
+http://:8080 {
+	import site
+}
+
+# Machine-specific sites (local/*.caddy, not in the repository).
+import /etc/caddy/local/*.caddy

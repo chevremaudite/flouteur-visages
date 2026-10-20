@@ -1,0 +1,33 @@
+services:
+  flouteur-visages:
+    build: .
+    image: flouteur-visages-caddy:2.11.4
+    container_name: flouteur-visages
+    restart: unless-stopped
+    # Unprivileged, read-only container: it only needs to read public/ and write its own
+    # certificate storage.
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 1.5
+    pids_limit: 200
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./local:/etc/caddy/local:ro  # optional machine-specific config
+      - ./public:/srv:ro
+      - ./caddy/data:/data       # Caddy's certificates and keys, kept across restarts
+      - ./caddy/config:/config
+    # Public access goes through caddy_musicserver (flouteur.braquage.fun -> flouteur-visages:8080).
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    external: true
+    name: webnet

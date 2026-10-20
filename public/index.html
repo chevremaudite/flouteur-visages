@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flouteur Visages</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🙈</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Flouteur Visages</h1>
+      <p class="lede">Floute automatiquement les visages de vos vidéos et photos.</p>
+      <p class="privacy"><span aria-hidden="true">🔒</span> Le traitement se fait entièrement sur votre appareil : vos fichiers ne sont jamais envoyés au serveur.</p>
+      <p id="insecure" class="notice" hidden>
+        Connexion non sécurisée : le site fonctionne, mais sans accélération (carte graphique, encodeur vidéo matériel).
+        Utilisez plutôt <a id="https-link" href="#">la version HTTPS</a>.
+      </p>
+    </header>
+
+    <section id="pick" class="card">
+      <label id="drop" class="drop" for="file">
+        <input id="file" type="file" multiple accept="video/*,image/*,.mkv,.mov,.avi,.mts,.m2ts,.webm,.heic">
+        <strong id="drop-title">Choisir des vidéos ou des photos</strong>
+        <span id="drop-sub">ou les glisser-déposer ici</span>
+      </label>
+
+      <fieldset class="modes">
+        <legend>Mode d'analyse</legend>
+        <label><input type="radio" name="mode" value="fast"> <strong>Rapide</strong>
+          <small>Analyse 1 image sur 2 (~2× plus rapide). Un visage très rapide peut être moins bien couvert.</small></label>
+        <label><input type="radio" name="mode" value="precise" checked> <strong>Précise</strong>
+          <small>Toutes les images, réglages de deface.</small></label>
+        <label><input type="radio" name="mode" value="thorough"> <strong>Très précise</strong>
+          <small>Résolution d'origine, double analyse (petits et grands visages), seuil plus bas, masques plus grands, et chaque image reprend aussi les visages des images voisines. Jusqu’à ~6× plus lent ; quelques flous en trop possibles.</small></label>
+      </fieldset>
+
+      <details class="options">
+        <summary>Réglages</summary>
+        <div class="grid">
+          <label>Méthode
+            <select id="replacewith">
+              <option value="blur" selected>Flou</option>
+              <option value="mosaic">Mosaïque</option>
+              <option value="solid">Rectangle noir</option>
+            </select>
+          </label>
+          <label>Forme du masque
+            <select id="shape">
+              <option value="ellipse" selected>Ellipse</option>
+              <option value="box">Rectangle</option>
+            </select>
+          </label>
+          <label>Seuil de détection <output id="threshold-out">0.20</output>
+            <input id="threshold" type="range" min="0.05" max="0.9" step="0.01" value="0.2">
+            <small>Plus bas = plus de visages détectés, mais plus de faux positifs.</small>
+          </label>
+          <label>Taille du masque <output id="mask-out">1.3×</output>
+            <input id="mask" type="range" min="1" max="2" step="0.05" value="1.3">
+          </label>
+          <label>Résolution d'analyse
+            <select id="maxside">
+              <option value="0">Originale (plus lent, plus précis)</option>
+              <option value="1920">1920 px</option>
+              <option value="1280" selected>1280 px</option>
+              <option value="960">960 px</option>
+              <option value="640">640 px (rapide)</option>
+            </select>
+            <small>Les petits visages lointains sont mieux détectés en haute résolution. Les photos sont toujours analysées en 1920 px minimum.</small>
+          </label>
+          <label>Qualité vidéo
+            <select id="quality">
+              <option value="veryhigh">Très haute</option>
+              <option value="high" selected>Haute</option>
+              <option value="medium">Normale</option>
+              <option value="low">Légère</option>
+            </select>
+          </label>
+          <label>Accélération
+            <select id="accel">
+              <option value="auto" selected>Automatique (carte graphique si possible)</option>
+              <option value="cpu">Processeur uniquement</option>
+            </select>
+          </label>
+          <label id="mosaic-row" hidden>Taille de la mosaïque <output id="mosaic-out">20 px</output>
+            <input id="mosaic" type="range" min="5" max="60" step="1" value="20">
+          </label>
+          <label class="check"><input id="audio" type="checkbox" checked> Conserver le son</label>
+        </div>
+      </details>
+
+      <button id="start" class="primary" disabled>Flouter les visages</button>
+    </section>
+
+    <section id="work" class="card" hidden>
+      <div class="row">
+        <strong id="status">Préparation…</strong>
+        <button id="cancel" class="ghost">Annuler</button>
+      </div>
+      <p id="current" class="muted"></p>
+      <progress id="bar"></progress>
+      <p id="stats" class="muted"></p>
+      <canvas id="preview" aria-label="Aperçu de la dernière image traitée"></canvas>
+    </section>
+
+    <section id="results" hidden>
+      <div class="row results-head">
+        <h2>Résultats</h2>
+        <div class="row">
+          <button id="zip" class="primary" hidden>Tout télécharger (.zip)</button>
+          <button id="again" class="ghost">Traiter d'autres fichiers</button>
+        </div>
+      </div>
+      <ul id="result-list"></ul>
+    </section>
+
+    <section id="error" class="card error" hidden>
+      <strong>Le traitement a échoué.</strong>
+      <pre id="error-msg"></pre>
+      <button id="retry" class="ghost">Recommencer</button>
+    </section>
+
+    <footer class="muted">
+      Détection : modèle CenterFace et algorithme de <a href="https://github.com/ORB-HD/deface">deface</a>,
+      exécutés dans le navigateur (onnxruntime-web, WebCodecs, ffmpeg.wasm).
+      Gardez cet onglet ouvert pendant le traitement.
+      <span id="engine"></span>
+      <a class="source" href="https://github.com/chevremaudite/flouteur-visages" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    </footer>
+  </main>
+  <template id="result-tpl">
+    <li class="card result">
+      <div class="media"></div>
+      <div class="meta">
+        <strong class="name"></strong>
+        <p class="summary muted"></p>
+        <a class="button primary download" download>Télécharger</a>
+      </div>
+    </li>
+  </template>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

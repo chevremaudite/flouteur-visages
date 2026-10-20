@@ -1,0 +1,18 @@
+{
+  "name": "flouteur_visages",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "mediabunny": "1.61.1",
+    "onnxruntime-web": "1.30.0"
+  }
+}
