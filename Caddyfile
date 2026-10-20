@@ -17,6 +17,29 @@
 (site) {
 	root * /srv
 
+	# Anonymous access log for usage statistics (stats.sh): time, domain, path and status
+	# only. IP addresses and every request header (browser, cookies, referrer) are deleted
+	# before anything is written.
+	log {
+		output file /logs/access.log {
+			roll_size 10MiB
+			roll_keep 50
+			roll_keep_for 8760h
+		}
+		format filter {
+			fields {
+				request>remote_ip delete
+				request>remote_port delete
+				request>client_ip delete
+				request>headers delete
+				request>tls delete
+				resp_headers delete
+				user_id delete
+			}
+			wrap json
+		}
+	}
+
 	# Only static files are served; nothing can be POSTed.
 	@write not method GET HEAD
 	respond @write 405

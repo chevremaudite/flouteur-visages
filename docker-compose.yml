@@ -23,6 +23,7 @@ services:
       - ./public:/srv:ro
       - ./caddy/data:/data       # Caddy's certificates and keys, kept across restarts
       - ./caddy/config:/config
+      - ./logs:/logs             # anonymous access log (see stats.sh)
     # Public access goes through caddy_musicserver (flouteur.braquage.fun -> flouteur-visages:8080).
     networks:
       - webnet
