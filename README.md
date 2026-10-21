@@ -1,8 +1,8 @@
 # Flouteur Visages
 
 Site statique qui floute les visages de vidéos et de photos **dans le navigateur du visiteur** :
-rien n'est envoyé au serveur (Caddy ne sert que des fichiers statiques et refuse tout sauf GET/HEAD).
-https://flouteur.lestenebres.fr
+rien n'est envoyé au serveur mis à part des logs anonymes pour avoir des stats sur le nombre d'utilisateurs.
+[https://flouteur.lestenebres.fr]
 
 - Détection : modèle CenterFace de [deface](https://github.com/ORB-HD/deface) 1.5.0 (pip), exporté avec ses
   dimensions dynamiques et exécuté avec onnxruntime-web : WebGPU si la carte graphique est plus rapide
