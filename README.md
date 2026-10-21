@@ -15,3 +15,4 @@ https://flouteur.lestenebres.fr
 - Modes : Rapide (réseau 1 image sur 2, boxes des voisines fusionnées), Précise (comportement de deface),
   Très précise (résolution d'origine, 2 passes à 2 échelles, seuil 0.15, masque 1.4, union avec les images voisines) — `public/analyzer.js`.
 - Photos : JPEG/PNG/WebP (et HEIC sous Safari), plusieurs à la fois, export ZIP. Les métadonnées EXIF (GPS…) sont supprimées.
+Des logs anonymisés sont collectés pour avoir des statistiques anonymes sur le nombre d'utilisateurs. Elles n'exposent aucune information (IP, OS etc.).
