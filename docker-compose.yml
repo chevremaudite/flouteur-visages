@@ -1,7 +1,7 @@
 services:
   flouteur-visages:
     build: .
-    image: flouteur-visages-caddy:2.11.4
+    image: flouteur-visages-caddy:2.11.9
     container_name: flouteur-visages
     restart: unless-stopped
     # Unprivileged, read-only container: it only needs to read public/ and write its own
